@@ -1,0 +1,11 @@
+{"time":"2025-02-22T14:50:41.679797-05:00","level":"INFO","msg":"stream: starting","core version":"0.19.7","symlink path":"/Users/dganjali/Documents/GitHub/FinalCSP/reinforcement/tetris/wandb/run-20250222_145041-a8fvq6hf/logs/debug-core.log"}
+{"time":"2025-02-22T14:50:41.787333-05:00","level":"INFO","msg":"created new stream","id":"a8fvq6hf"}
+{"time":"2025-02-22T14:50:41.787374-05:00","level":"INFO","msg":"stream: started","id":"a8fvq6hf"}
+{"time":"2025-02-22T14:50:41.787395-05:00","level":"INFO","msg":"sender: started","stream_id":"a8fvq6hf"}
+{"time":"2025-02-22T14:50:41.787389-05:00","level":"INFO","msg":"handler: started","stream_id":"a8fvq6hf"}
+{"time":"2025-02-22T14:50:41.787416-05:00","level":"INFO","msg":"writer: Do: started","stream_id":"a8fvq6hf"}
+{"time":"2025-02-22T14:50:41.959944-05:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-02-22T14:50:41.960335-05:00","level":"ERROR","msg":"git repo not found","error":"repository does not exist"}
+{"time":"2025-02-22T14:50:42.240651-05:00","level":"INFO","msg":"stream: closing","id":"a8fvq6hf"}
+{"time":"2025-02-22T14:50:42.24074-05:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-02-22T14:50:42.241397-05:00","level":"INFO","msg":"Stopped system monitor"}

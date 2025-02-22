@@ -1,0 +1,86 @@
+_wandb:
+    value:
+        cli_version: 0.19.7
+        code_path: code/reinforcement/tetris/train.py
+        m: []
+        python_version: 3.10.13
+        t:
+            "1":
+                - 1
+                - 2
+                - 3
+                - 5
+                - 53
+                - 55
+            "2":
+                - 1
+                - 2
+                - 3
+                - 5
+                - 53
+                - 55
+            "3":
+                - 13
+                - 16
+                - 23
+                - 35
+                - 55
+            "4": 3.10.13
+            "5": 0.19.7
+            "8":
+                - 2
+                - 5
+            "12": 0.19.7
+            "13": darwin-arm64
+batch_size:
+    value: 512
+buffer_size:
+    value: 30000
+capture_video:
+    value: true
+cuda:
+    value: true
+end_e:
+    value: 0.001
+env_id:
+    value: tetris_gymnasium/Tetris
+exp_name:
+    value: train
+exploration_fraction:
+    value: 0.25
+gamma:
+    value: 0.99
+hf_entity:
+    value: ""
+learning_rate:
+    value: 0.001
+learning_starts:
+    value: 3000
+num_envs:
+    value: 1
+save_model:
+    value: false
+seed:
+    value: 1
+start_e:
+    value: 1
+target_network_frequency:
+    value: 1
+tau:
+    value: 1
+torch_deterministic:
+    value: true
+total_timesteps:
+    value: 250000
+track:
+    value: true
+train_frequency:
+    value: 20
+upload_model:
+    value: false
+video_epoch_interval:
+    value: 500
+wandb_entity:
+    value: null
+wandb_project_name:
+    value: tetris_gymnasium_grouped

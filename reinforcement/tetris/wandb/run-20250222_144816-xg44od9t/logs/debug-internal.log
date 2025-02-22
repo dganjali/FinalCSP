@@ -1,0 +1,17 @@
+{"time":"2025-02-22T14:48:16.640957-05:00","level":"INFO","msg":"stream: starting","core version":"0.19.7","symlink path":"/Users/dganjali/Documents/GitHub/FinalCSP/reinforcement/tetris/wandb/run-20250222_144816-xg44od9t/logs/debug-core.log"}
+{"time":"2025-02-22T14:48:16.750744-05:00","level":"INFO","msg":"created new stream","id":"xg44od9t"}
+{"time":"2025-02-22T14:48:16.750802-05:00","level":"INFO","msg":"stream: started","id":"xg44od9t"}
+{"time":"2025-02-22T14:48:16.750958-05:00","level":"INFO","msg":"handler: started","stream_id":"xg44od9t"}
+{"time":"2025-02-22T14:48:16.750999-05:00","level":"INFO","msg":"writer: Do: started","stream_id":"xg44od9t"}
+{"time":"2025-02-22T14:48:16.751024-05:00","level":"INFO","msg":"sender: started","stream_id":"xg44od9t"}
+{"time":"2025-02-22T14:48:16.891051-05:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-02-22T14:48:16.892167-05:00","level":"ERROR","msg":"git repo not found","error":"repository does not exist"}
+{"time":"2025-02-22T14:48:18.649856-05:00","level":"INFO","msg":"stream: closing","id":"xg44od9t"}
+{"time":"2025-02-22T14:48:18.649897-05:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-02-22T14:48:18.650205-05:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-02-22T14:48:26.986407-05:00","level":"INFO","msg":"tensorboard: no root directory after 10 seconds, using working directory"}
+{"time":"2025-02-22T14:48:27.357186-05:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-02-22T14:48:27.453446-05:00","level":"INFO","msg":"writer: Close: closed","stream_id":"xg44od9t"}
+{"time":"2025-02-22T14:48:27.453465-05:00","level":"INFO","msg":"handler: closed","stream_id":"xg44od9t"}
+{"time":"2025-02-22T14:48:27.453488-05:00","level":"INFO","msg":"sender: closed","stream_id":"xg44od9t"}
+{"time":"2025-02-22T14:48:27.453892-05:00","level":"INFO","msg":"stream: closed","id":"xg44od9t"}

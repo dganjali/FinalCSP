@@ -1,0 +1,17 @@
+{"time":"2025-02-22T14:51:51.072392-05:00","level":"INFO","msg":"stream: starting","core version":"0.19.7","symlink path":"/Users/dganjali/Documents/GitHub/FinalCSP/reinforcement/tetris/wandb/run-20250222_145151-1anw8uw2/logs/debug-core.log"}
+{"time":"2025-02-22T14:51:51.180861-05:00","level":"INFO","msg":"created new stream","id":"1anw8uw2"}
+{"time":"2025-02-22T14:51:51.180915-05:00","level":"INFO","msg":"stream: started","id":"1anw8uw2"}
+{"time":"2025-02-22T14:51:51.180919-05:00","level":"INFO","msg":"handler: started","stream_id":"1anw8uw2"}
+{"time":"2025-02-22T14:51:51.180935-05:00","level":"INFO","msg":"writer: Do: started","stream_id":"1anw8uw2"}
+{"time":"2025-02-22T14:51:51.180934-05:00","level":"INFO","msg":"sender: started","stream_id":"1anw8uw2"}
+{"time":"2025-02-22T14:51:51.486353-05:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-02-22T14:51:51.486742-05:00","level":"ERROR","msg":"git repo not found","error":"repository does not exist"}
+{"time":"2025-02-22T14:52:01.575007-05:00","level":"INFO","msg":"tensorboard: no root directory after 10 seconds, using working directory"}
+{"time":"2025-02-22T15:06:22.979912-05:00","level":"INFO","msg":"stream: closing","id":"1anw8uw2"}
+{"time":"2025-02-22T15:06:22.979955-05:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-02-22T15:06:22.980557-05:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-02-22T15:06:23.511493-05:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-02-22T15:06:23.670751-05:00","level":"INFO","msg":"handler: closed","stream_id":"1anw8uw2"}
+{"time":"2025-02-22T15:06:23.670769-05:00","level":"INFO","msg":"writer: Close: closed","stream_id":"1anw8uw2"}
+{"time":"2025-02-22T15:06:23.670821-05:00","level":"INFO","msg":"sender: closed","stream_id":"1anw8uw2"}
+{"time":"2025-02-22T15:06:23.670864-05:00","level":"INFO","msg":"stream: closed","id":"1anw8uw2"}
