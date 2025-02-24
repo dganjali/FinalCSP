@@ -5,7 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import pickle
 import pydicom
-from numba import njit
+from numba import njit, prange
 
 # Set random seed for reproducibility
 np.random.seed(19)
@@ -90,41 +90,53 @@ parameters = {"W1": W1,
               "b2": b2,
               "b3": b3}
 
-# Ensure that arrays and weights are float32 to speed up computation
+# Ensure arrays and parameters are float32
 X = X.astype(np.float32)
 Y = Y.astype(np.float32)
 for key in parameters:
     parameters[key] = parameters[key].astype(np.float32)
 
-@njit
-def fwd_prop_numba(W1, b1, W2, b2, W3, b3, X):
-    Z1 = np.dot(W1, X) + b1
-    A1 = np.maximum(Z1, 0)
-    Z2 = np.dot(W2, A1) + b2
-    A2 = np.maximum(Z2, 0)
-    Z3 = np.dot(W3, A2) + b3
-    # Avoid overflow in exp by clipping
-    exp_neg = np.exp(-np.clip(Z3, -50, 50))
-    A3 = 1.0 / (1.0 + exp_neg)
-    return A3, Z1, A1, Z2, A2, Z3
+# Use Numba parallelization in our forward and backward functions.
 
 @njit
+def tile_bias(b, m):
+    # b shape: (n, 1) -> output: (n, m)
+    n = b.shape[0]
+    out = np.empty((n, m), dtype=b.dtype)
+    for i in range(m):
+        for j in range(n):
+            out[j, i] = b[j, 0]
+    return out
+
+@njit(parallel=True, fastmath=True)
+def fwd_prop_numba(W1, b1, W2, b2, W3, b3, X):
+    m = X.shape[1]
+    # Use custom tiling for biases
+    Z1 = np.dot(W1, X) + tile_bias(b1, m)
+    A1 = np.maximum(Z1, np.float32(0.0))
+    Z2 = np.dot(W2, A1) + tile_bias(b2, m)
+    A2 = np.maximum(Z2, np.float32(0.0))
+    Z3 = np.dot(W3, A2) + tile_bias(b3, m)
+    np.clip(Z3, -np.float32(50.0), np.float32(50.0), out=Z3)
+    A3 = np.float32(1.0) / (np.float32(1.0) + np.exp(-Z3))
+    return A3, Z1, A1, Z2, A2, Z3
+
+@njit(parallel=True, fastmath=True)
 def backward_prop_numba(W1, W2, W3, X, Y, Z1, A1, Z2, A2, A3):
     m = X.shape[1]
-    dZ3 = (A3 - Y).astype(np.float32)
-    # Explicitly cast right-hand operands to float32
-    dW3 = (1/m) * np.dot(dZ3, A2.T.astype(np.float32))
-    db3 = (1/m) * np.sum(dZ3, axis=1).reshape(dZ3.shape[0], 1).astype(np.float32)
+    dZ3 = A3 - Y
+    dW3 = (np.float32(1.0)/m) * np.dot(dZ3, A2.T)
+    db3 = (np.float32(1.0)/m) * np.sum(dZ3, axis=1).reshape(dZ3.shape[0], 1)
     
-    dA2 = np.dot(W3.T.astype(np.float32), dZ3)
-    dZ2 = (dA2 * (Z2 > 0)).astype(np.float32)
-    dW2 = (1/m) * np.dot(dZ2, A1.T.astype(np.float32))
-    db2 = (1/m) * np.sum(dZ2, axis=1).reshape(dZ2.shape[0], 1).astype(np.float32)
+    dA2 = np.dot(W3.T, dZ3)
+    dZ2 = dA2 * (Z2 > np.float32(0.0))
+    dW2 = (np.float32(1.0)/m) * np.dot(dZ2, A1.T)
+    db2 = (np.float32(1.0)/m) * np.sum(dZ2, axis=1).reshape(dZ2.shape[0], 1)
     
-    dA1 = np.dot(W2.T.astype(np.float32), dZ2)
-    dZ1 = (dA1 * (Z1 > 0)).astype(np.float32)
-    dW1 = (1/m) * np.dot(dZ1, X.T.astype(np.float32))
-    db1 = (1/m) * np.sum(dZ1, axis=1).reshape(dZ1.shape[0], 1).astype(np.float32)
+    dA1 = np.dot(W2.T, dZ2)
+    dZ1 = dA1 * (Z1 > np.float32(0.0))
+    dW1 = (np.float32(1.0)/m) * np.dot(dZ1, X.T)
+    db1 = (np.float32(1.0)/m) * np.sum(dZ1, axis=1).reshape(dZ1.shape[0], 1)
     
     return dW1, db1, dW2, db2, dW3, db3
 
@@ -137,8 +149,8 @@ def update_parameters(parameters, grads, learning_rate):
     parameters["b3"] -= learning_rate * grads[5]
     return parameters
 
-# Training loop with mini-batching and Numba-optimized functions
-num_epochs = 1000
+# Training loop with mini-batching using improved, pre-compiled functions
+num_epochs = 400
 learning_rate = 0.01
 batch_size = 64
 m = X.shape[1]
@@ -149,7 +161,7 @@ for epoch in range(num_epochs):
     X_shuffled = X[:, permutation]
     Y_shuffled = Y[:, permutation]
   
-    epoch_loss = 0
+    epoch_loss = 0.0
     for i in range(num_batches):
         start = i * batch_size
         end = start + batch_size
@@ -161,6 +173,7 @@ for epoch in range(num_epochs):
                                                   parameters["W3"], parameters["b3"],
                                                   X_batch)
   
+        # Compute loss in vectorized form
         loss = -np.sum(Y_batch * np.log(A3 + 1e-8) + (1 - Y_batch) * np.log(1 - A3 + 1e-8)) / X_batch.shape[1]
         epoch_loss += loss
   
@@ -168,6 +181,7 @@ for epoch in range(num_epochs):
                                     X_batch, Y_batch, Z1, A1, Z2, A2, A3)
         parameters = update_parameters(parameters, grads, learning_rate)
   
+    # Optionally display accuracy every few epochs
     if epoch % 100 == 0:
         A3_full, _, _, _, _, _ = fwd_prop_numba(parameters["W1"], parameters["b1"],
                                                 parameters["W2"], parameters["b2"],
@@ -176,6 +190,10 @@ for epoch in range(num_epochs):
         predictions = (A3_full > 0.5).astype(np.float32)
         accuracy = np.mean(predictions == Y)
         print(f"Epoch {epoch} - Avg Loss: {epoch_loss/num_batches:.4f} - Accuracy: {accuracy:.4f}")
+  
+    # Save parameters after each epoch for checkpointing
+    with open("parameters.pkl", "wb") as f:
+        pickle.dump(parameters, f)
 
 # Final predictions and display examples
 A3, _ = fwd_prop_numba(parameters["W1"], parameters["b1"],
