@@ -1,85 +1,93 @@
 import os
 import cv2
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
 import pickle
-
-# Define image size (should match training)
+from numba import njit
+import pydicom  # Add this import at the top
 IMG_SIZE = 64
 
-# Activation functions
-def relu(Z):
-    return np.maximum(0, Z)
+@njit
+def tile_bias(b, m):
+    # b shape: (n, 1) -> output: (n, m)
+    n = b.shape[0]
+    out = np.empty((n, m), dtype=b.dtype)
+    for i in range(m):
+        for j in range(n):
+            out[j, i] = b[j, 0]
+    return out
 
-def sigmoid(Z):
-    return 1 / (1 + np.exp(-Z))
+@njit(parallel=True, fastmath=True)
+def fwd_prop_numba(W1, b1, W2, b2, W3, b3, X):
+    m = X.shape[1]
+    # Use custom tiling for biases
+    Z1 = np.dot(W1, X) + tile_bias(b1, m)
+    A1 = np.maximum(Z1, np.float32(0.0))
+    Z2 = np.dot(W2, A1) + tile_bias(b2, m)
+    A2 = np.maximum(Z2, np.float32(0.0))
+    Z3 = np.dot(W3, A2) + tile_bias(b3, m)
+    # Increase numerical stability with stronger clipping
+    np.clip(Z3, -np.float32(20.0), np.float32(20.0), out=Z3)
+    # Add epsilon to prevent division by zero
+    A3 = np.float32(1.0) / (np.float32(1.0) + np.exp(-Z3) + np.float32(1e-7))
+    return A3, Z1, A1, Z2, A2, Z3
 
-# Forward propagation (using the same network architecture as in training)
-def fwd_prop(X, parameters):
-    W1 = parameters["W1"]
-    b1 = parameters["b1"]
-    W2 = parameters["W2"]
-    b2 = parameters["b2"]
-    W3 = parameters["W3"]
-    b3 = parameters["b3"]
+def load_parameters():
+    with open("parameters.pkl", "rb") as f:
+        return pickle.load(f)
 
-    Z1 = np.dot(W1, X) + b1
-    A1 = relu(Z1)
-    Z2 = np.dot(W2, A1) + b2
-    A2 = relu(Z2)
-    Z3 = np.dot(W3, A2) + b3
-    A3 = sigmoid(Z3)
-    return A3
+def predict_image(image_path, parameters):
+    # Load DICOM image using pydicom instead of cv2
+    try:
+        dcm = pydicom.dcmread(image_path)
+        img = dcm.pixel_array
+        img = img.astype(np.uint8)  # Convert to uint8 if necessary
+    except Exception as e:
+        print(f"Could not load image: {image_path}")
+        print(f"Error: {e}")
+        return None
+    
+    # Resize and normalize
+    img_resized = cv2.resize(img, (IMG_SIZE, IMG_SIZE))
+    img_normalized = img_resized.astype(np.float32) / 255.0
+    
+    # Reshape for network input
+    X = img_normalized.reshape(-1, 1)
+    
+    # Forward propagation
+    A3, _, _, _, _, _ = fwd_prop_numba(
+        parameters["W1"], parameters["b1"],
+        parameters["W2"], parameters["b2"],
+        parameters["W3"], parameters["b3"],
+        X
+    )
+    
+    return float(A3[0])
 
-# Load trained parameters
-with open("parameters.pkl", "rb") as f:
-    parameters = pickle.load(f)
+def main():
+    # Load model parameters
+    parameters = load_parameters()
+    if parameters is None:
+        print("Could not load model parameters")
+        return
+    
+    # Test directory path
+    test_dir = "rsna-pneumonia-detection-challenge/stage_2_test_images"
+    if not os.path.exists(test_dir):
+        print(f"Test directory not found: {test_dir}")
+        return
+    
+    # Process each image in test directory
+    for filename in os.listdir(test_dir):
+        if filename.endswith(('.dcm')):
+            image_path = os.path.join(test_dir, filename)
+            probability = predict_image(image_path, parameters)
+            
+            if probability is not None:
+                prediction = "Pneumonia" if probability > 0.5 else "Normal"
+                print(f"Image: {filename}")
+                print(f"Prediction: {prediction} (probability: {probability:.2%})")
+                print("-" * 50)
 
-# Define paths to the test data (here we reuse the pneumonia CSV & training images for testing)
-base_dir = os.path.join("rsna-pneumonia-detection-challenge")
-images_dir = os.path.join(base_dir, "stage_2_train_images")
-labels_csv = os.path.join(base_dir, "stage_2_train_labels.csv")
-
-# Read CSV of labels. (Assuming columns 'patientId' and 'Target' exist.)
-df = pd.read_csv(labels_csv)
-
-# Construct image filenames. (Assume images are stored as PNG files.)
-df["image_id"] = df["patientId"].astype(str) + ".png"
-
-# Build test set lists
-X_list = []
-Y_list = []
-
-print("Building test set...")
-for idx, row in df.iterrows():
-    label = row["Target"]
-    image_file = row["image_id"]
-    img_path = os.path.join(images_dir, image_file)
-    img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-    if img is None:
-        continue
-    img = cv2.resize(img, (IMG_SIZE, IMG_SIZE))
-    img = img.astype(np.float32) / 255.0
-    X_list.append(img.flatten())
-    Y_list.append(label)
-
-X_test = np.array(X_list).T  # Shape: (IMG_SIZE*IMG_SIZE, num_samples)
-Y_test = np.array(Y_list).reshape(1, -1)  # Shape: (1, num_samples)
-
-print(f"Test set size: {X_test.shape[1]} images")
-
-# Run forward propagation to get predictions
-A3 = fwd_prop(X_test, parameters)
-predictions = (A3 > 0.5).astype(int)
-accuracy = np.mean(predictions == Y_test)
-print("Test Accuracy: {:.2f}%".format(accuracy * 100))
-
-# Optionally, display a few examples and their predictions.
-for i in range(min(5, X_test.shape[1])):
-    plt.imshow(X_test[:, i].reshape(IMG_SIZE, IMG_SIZE), cmap='gray')
-    plt.text(1, 2, "Pred: " + str(predictions[0, i]) + " | Actual: " + str(Y_test[0, i]),
-             fontsize=15, color='white')
-    plt.title("Example " + str(i))
-    plt.axis("off")
-    plt.show()
+if __name__ == "__main__":
+    print("Starting test...")
+    main()
