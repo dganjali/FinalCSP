@@ -117,14 +117,20 @@ def fwd_prop_numba(W1, b1, W2, b2, W3, b3, X):
     Z2 = np.dot(W2, A1) + tile_bias(b2, m)
     A2 = np.maximum(Z2, np.float32(0.0))
     Z3 = np.dot(W3, A2) + tile_bias(b3, m)
-    np.clip(Z3, -np.float32(50.0), np.float32(50.0), out=Z3)
-    A3 = np.float32(1.0) / (np.float32(1.0) + np.exp(-Z3))
+    # Increase numerical stability with stronger clipping
+    np.clip(Z3, -np.float32(20.0), np.float32(20.0), out=Z3)
+    # Add epsilon to prevent division by zero
+    A3 = np.float32(1.0) / (np.float32(1.0) + np.exp(-Z3) + np.float32(1e-7))
     return A3, Z1, A1, Z2, A2, Z3
 
 @njit(parallel=True, fastmath=True)
 def backward_prop_numba(W1, W2, W3, X, Y, Z1, A1, Z2, A2, A3):
     m = X.shape[1]
     dZ3 = A3 - Y
+    
+    # Clip gradients for stability
+    np.clip(dZ3, -np.float32(1.0), np.float32(1.0), out=dZ3)
+    
     dW3 = (np.float32(1.0)/m) * np.dot(dZ3, A2.T)
     db3 = (np.float32(1.0)/m) * np.sum(dZ3, axis=1).reshape(dZ3.shape[0], 1)
     
@@ -138,15 +144,23 @@ def backward_prop_numba(W1, W2, W3, X, Y, Z1, A1, Z2, A2, A3):
     dW1 = (np.float32(1.0)/m) * np.dot(dZ1, X.T)
     db1 = (np.float32(1.0)/m) * np.sum(dZ1, axis=1).reshape(dZ1.shape[0], 1)
     
+    # Clip all gradients
+    for grad in [dW1, db1, dW2, db2, dW3, db3]:
+        np.clip(grad, -np.float32(1.0), np.float32(1.0), out=grad)
+    
     return dW1, db1, dW2, db2, dW3, db3
 
 def update_parameters(parameters, grads, learning_rate):
-    parameters["W1"] -= learning_rate * grads[0]
-    parameters["b1"] -= learning_rate * grads[1]
-    parameters["W2"] -= learning_rate * grads[2]
-    parameters["b2"] -= learning_rate * grads[3]
-    parameters["W3"] -= learning_rate * grads[4]
-    parameters["b3"] -= learning_rate * grads[5]
+    """Update parameters using gradients"""
+    dW1, db1, dW2, db2, dW3, db3 = grads
+    
+    parameters["W1"] -= learning_rate * dW1
+    parameters["b1"] -= learning_rate * db1
+    parameters["W2"] -= learning_rate * dW2
+    parameters["b2"] -= learning_rate * db2
+    parameters["W3"] -= learning_rate * dW3
+    parameters["b3"] -= learning_rate * db3
+    
     return parameters
 
 # Training loop with mini-batching using improved, pre-compiled functions

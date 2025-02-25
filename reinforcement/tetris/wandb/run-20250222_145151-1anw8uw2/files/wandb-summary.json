@@ -1,1 +1,0 @@
-{"_step":5597,"global_step":115000,"_timestamp":1.740254778087081e+09,"_runtime":870.989566,"schedule/epsilon":0.001,"losses/td_loss":670.80304,"losses/old_q":347.42596,"losses/target_q":348.86322,"_wandb":{"runtime":871},"charts/SPS":132}
