@@ -1,2 +1,3 @@
 classifier/rsna-pneumonia-detection-challenge/
 newclassifier/archive/
+newclassifier/rps_model.keras
